@@ -1,0 +1,229 @@
+# models.yaml — DRAFT schema v0.3 (2026-10-24; SOURCE_RUBRIC.md v2, per-claim recency)
+# Two top-level collections:
+#   models:   one entry per routable (model, reasoning_effort) config, with time- and context-tiered pricing
+#   subtasks: one entry per subtask, with proxy benchmarks, evidence, and picks
+# ROUTING.md is generated from this file. Numbers must cite a source; unknown -> null.
+
+schema_version: 0.3
+generated: 2026-10-24
+timezone: America/Los_Angeles
+
+# ---------------------------------------------------------------- field spec
+# models[]:
+#   id:               stable slug "<provider>/<model>@<effort>"
+#   provider, model, api_model_name, reasoning_effort
+#   open_weights:     yes | no | pending
+#   api_available:    bool (false for e.g. Muse Wonder Full)
+#   context_window:   int tokens
+#   pricing[]:        list of price windows; harness picks the one matching today + prompt size
+#     - input_usd_per_mtok, output_usd_per_mtok, cached_input_usd_per_mtok
+#       valid_from / valid_until (null = open-ended), prompt_tokens_min / max
+#       modifiers: {peak_hours_utc, batch_discount, data_residency_multiplier}
+#       source_url, source_type: provider | third_party, checked
+# subtasks[]:
+#   id, description, routing_signals (hints the harness can use to classify a step)
+#   proxies[]:        {benchmark, runner, weight, status: maintained|saturated|stale, independent: bool, harness, url}
+#   good_enough:      {benchmark, rule}  e.g. "within 6 pts of best" or ">= 55%"
+#   evidence[]:       {model_id, benchmark, score, cost_per_task_usd, harness, network, source_url, checked,
+#                      source_id (row in sources.csv), source_tier: A|B|C, runner, role: pick|method|price,
+#                      --- recency (SOURCE_RUBRIC.md §4, required on every row) ---
+#                      evidence_date:        YYYY-MM-DD, "YYYY-MM" if only the month is known, or null if unknown
+#                      evidence_date_basis:  row_date | board_update | model_release_lower_bound | publication | unknown
+#                      age_days:             int, date_checked - evidence_date; null if unknown
+#                      age_is_upper_bound:   bool, true when evidence_date is a lower bound or month-only
+#                      freshness:            fresh (<=90 d) | aging (91-180 d) | stale (>180 d) | unknown (treated as stale)
+#                      stale:                bool, true when freshness is stale or unknown
+#                      claim_scope:          direct (this exact model + effort was tested) | family (predecessor/sibling/other effort; R3)
+#                      tested_model:         the model the source actually ran, when claim_scope = family
+#                      price_verified:       bool, list price of the tested model re-checked on the provider page on `checked` (R2)
+#                      cost_at_evidence_date: bool, true = cost_per_task_usd uses the prices in force when the row ran
+#                      effective_tier:       A|B, source_tier after R2-R4 (never higher than source_tier)}
+#                     Only tier A/B may appear; at most 3 cited per pick (SOURCE_RUBRIC.md §6).
+#   picks:            {best_quality, good_enough, budget} -> {model_id, status, cites[], why,
+#                      relies_on_older_evidence: bool (any cited row aging/stale/unknown or family),
+#                      anchored: bool | null (R5; null when every cited row is fresh)}
+#   status:           supported | provisional | contested | insufficient   (per pick; SOURCE_RUBRIC.md §6)
+#   caveats[]:        free text
+#   review_by:        date after which picks must be re-verified (earliest price expiry or ~30 days)
+
+models:
+  - id: anthropic/claude-opus-5.5@max
+    provider: Anthropic
+    model: Claude Opus 5.5
+    api_model_name: null          # not captured
+    reasoning_effort: max
+    open_weights: no
+    api_available: true
+    context_window: 1000000
+    pricing:
+      - input_usd_per_mtok: 4.00
+        output_usd_per_mtok: 20.00
+        cached_input_usd_per_mtok: 0.20
+        valid_from: null
+        valid_until: null
+        modifiers: {batch_discount: 0.5, data_residency_multiplier: 1.1, fast_mode: {input: 8.00, output: 40.00}}
+        source_url: https://docs.anthropic.com/en/docs/about-claude/pricing
+        source_type: provider
+        checked: 2026-10-24
+
+  - id: moonshot/kimi-k3.1-pro@default
+    provider: Moonshot AI
+    model: Kimi K3.1 Pro
+    api_model_name: null
+    reasoning_effort: default
+    open_weights: pending          # announced, not published as of 2026-10-23 (AA)
+    api_available: true
+    context_window: 1000000
+    pricing:
+      - {input_usd_per_mtok: 2.00, output_usd_per_mtok: 10.00, cached_input_usd_per_mtok: 0.20,
+         valid_from: null, valid_until: null,
+         source_url: https://artificialanalysis.ai/articles/kimi-k3-1-pro-launch-benchmarks,
+         source_type: third_party, checked: 2026-10-24}
+
+  - id: openai/gpt-6.1-sol@max
+    provider: OpenAI
+    model: GPT-6.1 Sol
+    api_model_name: gpt-6.1-sol
+    reasoning_effort: max
+    open_weights: no
+    api_available: true
+    context_window: 1000000
+    pricing:
+      - {input_usd_per_mtok: 2.00, output_usd_per_mtok: 10.00, cached_input_usd_per_mtok: 0.10,
+         prompt_tokens_max: 272000, source_url: https://platform.openai.com/docs/pricing,
+         source_type: provider, checked: 2026-10-24}
+      - {input_usd_per_mtok: 4.00, output_usd_per_mtok: 15.00, cached_input_usd_per_mtok: 0.20,
+         prompt_tokens_min: 272001, source_url: https://platform.openai.com/docs/pricing,
+         source_type: provider, checked: 2026-10-24}
+
+  - id: anthropic/claude-haiku-5.5@default
+    provider: Anthropic
+    model: Claude Haiku 5.5
+    api_model_name: null
+    reasoning_effort: default      # Vals does not state effort for Vibe Code Bench run
+    open_weights: no
+    api_available: true
+    context_window: 1000000
+    pricing:
+      - {input_usd_per_mtok: 0.10, output_usd_per_mtok: 0.50, cached_input_usd_per_mtok: 0.01,
+         prompt_tokens_max: 100000, source_url: https://docs.anthropic.com/en/docs/about-claude/pricing,
+         source_type: provider, checked: 2026-10-24}
+      - {input_usd_per_mtok: 0.50, output_usd_per_mtok: 2.50, cached_input_usd_per_mtok: 0.05,
+         prompt_tokens_min: 100001, source_url: https://docs.anthropic.com/en/docs/about-claude/pricing,
+         source_type: provider, checked: 2026-10-24}
+
+  - id: google/gemini-4-argon@high
+    provider: Google
+    model: Gemini 4 Argon
+    api_model_name: gemini-4-argon
+    reasoning_effort: high
+    open_weights: no
+    api_available: true
+    context_window: 1000000
+    pricing:
+      - {input_usd_per_mtok: 2.00, output_usd_per_mtok: 10.00, valid_until: 2026-11-30,
+         note: promotional, source_url: https://ai.google.dev/gemini-api/docs/pricing,
+         source_type: provider, checked: 2026-10-24}
+      - {input_usd_per_mtok: 4.00, output_usd_per_mtok: 20.00, valid_from: 2026-12-01,
+         source_url: https://ai.google.dev/gemini-api/docs/pricing, source_type: provider, checked: 2026-10-24}
+
+subtasks:
+  # ------------------------------------------------------------- example 1
+  - id: terminal_agentic_loop
+    description: >
+      Long-horizon autonomous work in a shell: build/run/debug a service, data or ML pipeline,
+      ops task. Many tool calls, graded on the final artifact.
+    routing_signals: [multi_step_shell, runs_tests_or_builds, expected_turns_gt_20, no_human_in_loop]
+    proxies:
+      - {benchmark: terminal-bench-4.0, runner: Vals AI, weight: 0.6, status: maintained, independent: true,
+         harness: mini-swe-agent (bash only), scoring: avg@3 pass@1, url: https://www.vals.ai/benchmarks/terminal-bench-4}
+      - {benchmark: terminal-bench-4.0, runner: Artificial Analysis, weight: 0.4, status: maintained, independent: true,
+         harness: AA, url: https://artificialanalysis.ai/evaluations/terminalbench-4-0}
+    good_enough:
+      benchmark: terminal-bench-4.0 (Vals)
+      rule: "score >= best - 10 pts and cheaper per task (SOURCE_RUBRIC.md §6)"
+    evidence:
+      - {model_id: anthropic/claude-opus-5.5, benchmark: tb4-vals, score: 65.15, cost_per_task_usd: 13.20, harness: mini-swe-agent, source_url: https://www.vals.ai/benchmarks/terminal-bench-4, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: anthropic/claude-sonnet-5.5, benchmark: tb4-vals, score: 64.14, cost_per_task_usd: 16.51, harness: mini-swe-agent, source_url: https://www.vals.ai/benchmarks/terminal-bench-4, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: moonshot/kimi-k3.1-pro, benchmark: tb4-vals, score: 63.64, cost_per_task_usd: 4.57, harness: mini-swe-agent, source_url: https://www.vals.ai/benchmarks/terminal-bench-4, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: false, cost_at_evidence_date: true}
+      - {model_id: moonshot/kimi-k3.1-pro, benchmark: tb4-aa, score: 67.2, cost_per_task_usd: null, source_url: https://artificialanalysis.ai/articles/kimi-k3-1-pro-launch-benchmarks, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Artificial Analysis, evidence_date: "2026-10-23", evidence_date_basis: publication, age_days: 1, freshness: fresh, stale: false, claim_scope: direct, price_verified: false, cost_at_evidence_date: true}
+      - {model_id: anthropic/claude-sonnet-5.5, benchmark: aa-coding-agent-tb4, score: 66, harness: Claude Code (max), source_url: https://artificialanalysis.ai/agents/coding-agents, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Artificial Analysis, evidence_date: "2026-10", evidence_date_basis: board_update, age_days: 23, age_is_upper_bound: true, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: anthropic/claude-opus-5.5, benchmark: aa-coding-agent-tb4, score: 63, harness: Claude Code (max), source_url: https://artificialanalysis.ai/agents/coding-agents, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Artificial Analysis, evidence_date: "2026-10", evidence_date_basis: board_update, age_days: 23, age_is_upper_bound: true, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: moonshot/kimi-k3.1-pro, benchmark: livebench-2.0-agentic, score: 49.5, source_url: https://livebench.ai/, checked: 2026-10-24, note: contradicts TB4, source_tier: B, effective_tier: B, runner: Abacus AI, evidence_date: "2026-10-14", evidence_date_basis: publication, age_days: 10, freshness: fresh, stale: false, claim_scope: direct, price_verified: false, cost_at_evidence_date: true}
+      - {model_id: openai/gpt-6.1-sol, benchmark: tb4-vals, score: 55.05, cost_per_task_usd: 1.72, harness: mini-swe-agent, source_url: https://www.vals.ai/benchmarks/terminal-bench-4, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: zai/glm-5.3-flash, benchmark: tb4-vals, score: 37.37, cost_per_task_usd: 1.22, harness: mini-swe-agent, source_url: https://www.vals.ai/benchmarks/terminal-bench-4, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: null, note: "Vals $/task may use the expired 50% promo price ($0.075/$0.25)"}
+      - {model_id: anthropic/claude-haiku-5.5, benchmark: tb4-vals, score: 36.36, cost_per_task_usd: 3.12, harness: mini-swe-agent, source_url: https://www.vals.ai/benchmarks/terminal-bench-4, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+    picks:
+      best_quality: {model_id: anthropic/claude-opus-5.5@max, status: supported, cites: [tb4-vals (A), aa-coding-agent-tb4 (A)], relies_on_older_evidence: false, anchored: null,
+                     why: "#1 Vals TB4 65.15% ($13.20); 63% in Claude Code on AA, within 3 of Sonnet 5.5 66%; cheaper per task than Sonnet 5.5 on both"}
+      good_enough:  {model_id: moonshot/kimi-k3.1-pro@default, status: contested, cites: [tb4-vals (A), tb4-aa (A), livebench-2.0-agentic (B, contra)], relies_on_older_evidence: false, anchored: null,
+                     why: "63.64% at $4.57 (Vals), 67.2% (AA); but LiveBench agentic 49.5 vs Opus 85.0 and launched 10/23"}
+      budget:       {model_id: openai/gpt-6.1-sol@max, status: supported, cites: [tb4-vals (A), tb4-aa (A)], relies_on_older_evidence: false, anchored: null,
+                     why: "step-down, not within the good-enough bar: 55.05% at $1.72 (Vals), 56.1% (AA), ~10-11 pts below the leader"}
+    caveats:
+      - "~3/4 of TB4 tasks are outside traditional SWE (science, ML, ops); weight down for pure-code repos."
+      - "Native scaffolds (Claude Code, Codex) may score higher than mini-swe-agent."
+      - "Kimi K3.1 Pro launched 2026-10-23; only 1-2 days of independent data."
+      - "Vals Router Index: routers that moved the final step to a small model lost accuracy; don't downshift mid-loop."
+    review_by: 2026-11-24
+
+  # ------------------------------------------------------------- example 2
+  - id: greenfield_app
+    description: >
+      Build a working web app or large feature from a natural-language spec: scaffold, install deps,
+      wire DB/auth, run and self-test.
+    routing_signals: [new_project, spec_to_app, frontend_and_backend, few_existing_files]
+    proxies:
+      - {benchmark: vibe-code-bench-v1.1, runner: Vals AI, weight: 0.8, status: maintained, independent: true,
+         harness: OpenHands, scoring: "% of UI tests with >=90% substeps passing", url: https://www.vals.ai/benchmarks/vibe-code}
+      - {benchmark: lmarena-webdev, runner: LMArena, weight: 0.2, status: maintained, independent: true,
+         harness: n/a (pairwise human votes), url: https://arena.ai/leaderboard/code/webdev}
+    good_enough:
+      benchmark: vibe-code-bench-v1.1
+      rule: "score >= best - 10 pts and cheaper per task (SOURCE_RUBRIC.md §6)"
+    evidence:
+      - {model_id: anthropic/claude-sonnet-5.5, benchmark: vcb-1.1, score: 92.39, cost_per_task_usd: 31.25, harness: OpenHands, source_url: https://www.vals.ai/benchmarks/vibe-code, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: google/gemini-4-argon, benchmark: vcb-1.1, score: 91.91, cost_per_task_usd: 8.11, harness: OpenHands, source_url: https://www.vals.ai/benchmarks/vibe-code, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: anthropic/claude-haiku-5.5, benchmark: vcb-1.1, score: 90.44, cost_per_task_usd: 6.07, harness: OpenHands, source_url: https://www.vals.ai/benchmarks/vibe-code, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: openai/gpt-6.1-sol, benchmark: vcb-1.1, score: 88.93, cost_per_task_usd: 6.23, harness: OpenHands, source_url: https://www.vals.ai/benchmarks/vibe-code, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: deepseek/deepseek-v4.1-flash-1017, benchmark: vcb-1.1, score: 87.73, cost_per_task_usd: 0.58, harness: OpenHands, source_url: https://www.vals.ai/benchmarks/vibe-code, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Vals AI, evidence_date: "2026-10-24", evidence_date_basis: board_update, age_days: 0, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: anthropic/claude-opus-5.5, benchmark: lmarena-webdev, score: 1807, unit: elo, source_url: https://arena.ai/leaderboard/code/webdev, checked: 2026-10-24, source_tier: B, effective_tier: B, runner: LMArena, evidence_date: "2026-10-22", evidence_date_basis: board_update, age_days: 2, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+      - {model_id: anthropic/claude-haiku-5.5, benchmark: lmarena-webdev, score: 1585, unit: elo, source_url: https://arena.ai/leaderboard/code/webdev, checked: 2026-10-24, note: contradicts VCB placement, source_tier: B, effective_tier: B, runner: LMArena, evidence_date: "2026-10-22", evidence_date_basis: board_update, age_days: 2, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: true}
+    picks:
+      best_quality: {model_id: anthropic/claude-sonnet-5.5@default, status: supported, cites: [vcb-1.1 (A), lmarena-webdev (B)], relies_on_older_evidence: false, anchored: null,
+                     why: "#1 VCB 92.39%; top-3 on WebDev (~1768)"}
+      good_enough:  {model_id: anthropic/claude-haiku-5.5@default, status: contested, cites: [vcb-1.1 (A), lmarena-webdev (B, contra)], relies_on_older_evidence: false, anchored: null,
+                     why: "90.44% (-1.95 pts) at $6.07/test vs $31.25; WebDev ranks it far lower (1585)"}
+      budget:       {model_id: deepseek/deepseek-v4.1-flash-1017@default, status: contested, cites: [vcb-1.1 (A), lmarena-webdev (B, contra)], relies_on_older_evidence: false, anchored: null,
+                     why: "87.73% at $0.58/test (~1/54 of Sonnet); WebDev 1664"}
+    caveats:
+      - "Vals VCB cost/test for Gemini 4 Argon uses $4/$20; at promo $2/$10 (through 2026-11-30) it would be cheaper still."
+      - "Haiku 5.5 price jumps 5x for prompts >100K tokens; long app sessions can cross that."
+      - "WebDev Arena rewards first-draft polish; it ranks Opus 5.5 #1 while VCB ranks it #5."
+    review_by: 2026-11-30   # Gemini 4 Argon promo expiry
+
+  # ------------------------------------------------------------- example 3 (older evidence, rubric v2)
+  - id: issue_resolution
+    description: >
+      Resolve a real multi-file issue in an existing repo so that hidden tests or a maintainer review pass.
+    routing_signals: [bug_report_or_issue, existing_repo, multi_file_change, tests_present]
+    proxies:
+      - {benchmark: frontiercode-1.1-aa, runner: Artificial Analysis, weight: 0.6, status: maintained, independent: true,
+         harness: Stirrup, url: https://artificialanalysis.ai/evaluations/frontiercode}
+      - {benchmark: swe-rebench, runner: Nebius, weight: 0.4, status: maintained, independent: true,
+         harness: SWE-rebench agent, url: https://swe-rebench.com/}
+    good_enough:
+      benchmark: frontiercode-1.1-aa
+      rule: "score >= best - 10 pts and cheaper per task (SOURCE_RUBRIC.md §6)"
+    evidence:
+      - {model_id: anthropic/claude-opus-5.5@medium, benchmark: frontiercode-1.1-aa, score: 57.1, cost_per_task_usd: null, source_url: https://artificialanalysis.ai/evaluations/frontiercode, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Artificial Analysis, evidence_date: "2026-10", evidence_date_basis: board_update, age_days: 23, age_is_upper_bound: true, freshness: fresh, stale: false, claim_scope: direct, price_verified: true, cost_at_evidence_date: null}
+      - {model_id: anthropic/claude-opus-5.5@medium, benchmark: swe-rebench, score: 63.4, cost_per_task_usd: 3.47, source_url: https://swe-rebench.com/, checked: 2026-10-24, source_tier: A, effective_tier: B, runner: Nebius, evidence_date: "2026-07-24", evidence_date_basis: model_release_lower_bound, age_days: 92, age_is_upper_bound: true, freshness: aging, stale: false, claim_scope: family, tested_model: Claude Opus 5, price_verified: true, cost_at_evidence_date: true, note: "Opus 5 still listed at $5/$25 (more than Opus 5.5 at $4/$20)"}
+      - {model_id: xai/grok-4.5@high, benchmark: swe-rebench, score: 63.8, score_se: 0.60, cost_per_task_usd: 1.47, source_url: https://swe-rebench.com/, checked: 2026-10-24, source_tier: A, effective_tier: A, runner: Nebius, evidence_date: null, evidence_date_basis: unknown, age_days: null, freshness: unknown, stale: true, claim_scope: direct, price_verified: true, cost_at_evidence_date: true, note: "list $2/$6 unchanged; leader on this source is Claude Fable 5 64.5% at $4.40"}
+    picks:
+      best_quality: {model_id: anthropic/claude-opus-5.5@medium, status: supported, cites: [frontiercode-1.1-aa (A), swe-rebench (B, family)], relies_on_older_evidence: true, anchored: null,
+                     why: "57.1% on FrontierCode (#1); predecessor Opus 5 is in SWE-rebench's top tier (63.4% vs leader 64.5%)"}
+      budget:       {model_id: xai/grok-4.5@high, status: provisional, cites: [swe-rebench (A)], relies_on_older_evidence: true, anchored: false,
+                     why: "63.8% at $1.47 vs leader 64.5% at $4.40 on SWE-rebench; source has no current-frontier rows, so the gap to Opus 5.5 is unknown (R5)"}
+    caveats:
+      - "SWE-rebench rows are undated; the newest row is >= 2026-07-24 (Claude Opus 5 release)."
+    review_by: 2026-11-24
