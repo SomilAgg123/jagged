@@ -7,7 +7,7 @@ DOCS = ROOT / "docs"
 Tiers are computed, never hand-set."""
 import csv
 D = "2026-10-24"
-# rubric v2 (2026-10-24): recency no longer counts toward the source score or gates tier A.
+# rubric v2.1 (2026-10-24): D6 single-run test (§2.1). v2: recency no longer counts toward the source score or gates tier A.
 # `rec` is still recorded per source (coverage of current models, informational) and recency
 # is applied per data point (evidence_date, age_days, freshness flag) in research.md / schema.
 W = dict(ind=2, cont=2, meth=1, repro=1, stats=1.5, rec=1.5, rel=1.5, cost=1, judge=1.5)
@@ -23,7 +23,7 @@ def tier(s, disq, caps):
     if pct >= 50 or a_ok: return pct, "B"
     return pct, "C"
 
-# tiers from the previous pass (v1 rule, sources.csv of 2026-10-24 14:27 PT), used only to report moves
+# tiers from the previous pass (research v0.3, data/sources.csv as committed in c654c1b, 65 sources), used only to report moves
 PREV = {
 "Vals Terminal-Bench 4.0": "A",
 "Vals Code Migration v1.1": "A",
@@ -40,25 +40,25 @@ PREV = {
 "AA-LCR": "B",
 "AA-Omniscience": "B",
 "AA Intelligence Index": "B",
-"AA IFBench": "C",
-"SWE-rebench": "B",
+"AA IFBench": "A",
+"SWE-rebench": "A",
 "Epoch AI SWE-bench Verified": "C",
 "Epoch Capabilities Index (ECI)": "B",
-"METR Time Horizons 1.1": "C",
+"METR Time Horizons 1.1": "A",
 "METR Opus 5.5 pre-deployment report": "C",
 "LiveBench 2.0": "B",
 "SWE-bench-Live": "C",
 "Agent-as-a-Router / CodeRouterBench (arXiv 2606.22902)": "B",
 "Scrouting / SuperScout (arXiv 2608.04804)": "B",
-"FeatureBench (arXiv 2602.10975)": "C",
-"SWE-CI (arXiv 2603.03823)": "C",
-"SWT-bench": "C",
-"TestGenEval": "C",
-"JSONSchemaBench": "C",
-"MCP-Universe": "C",
+"FeatureBench (arXiv 2602.10975)": "A",
+"SWE-CI (arXiv 2603.03823)": "A",
+"SWT-bench": "B",
+"TestGenEval": "B",
+"JSONSchemaBench": "B",
+"MCP-Universe": "B",
 "Scale SWE-Bench Pro V2 (private split)": "B",
 "Scale SWE-Bench Pro V2 (public split)": "C",
-"Scale SWE-Bench Pro (original public)": "C",
+"Scale SWE-Bench Pro (original public)": "B",
 "Scale SWE Atlas Codebase QnA": "B",
 "Scale MCP Atlas": "B",
 "LMArena WebDev": "B",
@@ -73,8 +73,8 @@ PREV = {
 "Martian Code Review Bench": "C",
 "Zapier AutomationBench (strict, own board)": "B",
 "Sierra τ³-bench": "B",
-"Berkeley BFCL V4": "C",
-"Aider Polyglot": "C",
+"Berkeley BFCL V4": "A",
+"Aider Polyglot": "B",
 "LiveCodeBench": "C",
 "Interfaze Structured Output Benchmark": "C",
 "OpenRouter rankings": "C",
@@ -83,6 +83,11 @@ PREV = {
 "The New Stack: DeepSeek V4.1 Flash 1017 vs Haiku 5.5": "C",
 "Morph 'best model for coding'": "C",
 "Developers Digest / AIHubMix subagent posts": "C",
+"Toolathlon-Verified": "B",
+"Fiction.LiveBench (via Epoch)": "C",
+"AA τ²-Bench Telecom": "C",
+"SWE-bench Multilingual (model-card board)": "C",
+"Multi-SWE-bench": "C",
 "BenchLeader / BenchLM / LLMBoard / benchgap mirrors": "C",
 "Provider pricing docs (Anthropic, OpenAI, Google, xAI, Meta, DeepSeek)": "A"
 }
@@ -224,10 +229,10 @@ SRC = [
  S(1,2,3,2,2,3,2,0,1),[],["commercial stake"],
  "3 repeated runs, human-validated findings, open methodology. Scores review agents (Copilot included), not bare models. LLM judge (Claude Sonnet 5)."),
 ("CodeReviewBench (Kodus)","https://www.codereviewbench.com/","Kodus","harness vendor","pick","code_review",
- S(1,1,2,2,1,2,3,2,1),["D6 30 PRs, one run per model; own page says ranks are noise"],[],""),
-("Martian Code Review Bench","https://github.com/withmartian/code-review-benchmark/","Martian","harness vendor","pick","code_review",
- S(1,2,0,0,1,2,3,0,1),["D5 repo page showed no content on fetch; results seen only in Greptile marketing"],[],
- "Martian sells a router; scores review tools, not models."),
+ S(1,1,2,2,1,2,3,2,1),["D6 30 PRs, one run per model; own page says ranks are noise. Re-checked under v2.1 §2.1: the worst-case noise on a gap at n = 30 is ~25 pts, and no per-PR results or completion counts were found, so no row passes"],[],""),
+("Martian Code Review Bench","https://github.com/withmartian/code-review-benchmark","Martian","harness vendor","pick","code_review",
+ S(1,1,2,3,2,2,2,0,1),[],[],
+ "Re-checked 2026-10-24: the repo now lists files via the GitHub API, and IronBee re-ran its offline set (50 public PRs, 158 core goldens) from it, so D5 no longer applies. It is C on score (48): public PRs (cont = 1), LLM judge only, no cost, and the board ranks review tools, not bare models (rel = 2). Martian sells a router (ind = 1). Use IronBee's model-level rerun instead."),
 ("Zapier AutomationBench (strict, own board)","https://zapier.com/benchmarks/gemini-argon-4-report","Zapier","benchmark owner","pick","tool_orchestration",
  S(1,2,3,2,3,3,2,2,3),[],[],
  "657 tasks with strict end-state pass/fail. Zapier ships no model, but this Gemini 4 Argon 'release report' was a pre-release partner run (ind = 1). Claude costs use a different basis."),
@@ -238,7 +243,7 @@ SRC = [
  S(3,2,3,3,3,0,2,1,3),[],[],
  "Readable via the board's own data_overall.csv (2026-10-24). Last updated 2026-04-12 (age 195 days). AST and executable function-call checks; open bfcl-eval package. Top rows: Claude Opus 4.5 (FC) 77.47%, Claude Sonnet 4.5 (FC) 73.24%, Gemini 3 Pro Preview (Prompt) 72.51%, GLM-4.6 (FC thinking) 72.38%. Total $ is estimated by Berkeley (cost = 1). It tests no model in the current routing set. v1: C (D3) → v2: A for its tested models."),
 ("Aider Polyglot","https://aider.chat/docs/leaderboards/","Aider","community","pick","small_edit",
- S(2,1,3,3,2,0,2,2,3),[],[],"Last updated 2025-11-20. Newest rows: gpt-5 (high) 88.0% ($29.08) and DeepSeek-V3.2-Exp Reasoner 74.2% ($1.30). 225 public Exercism tasks, one run (cont = 1). v1: C (D3) → v2: B."),
+ S(2,1,3,3,2,0,2,2,3),[],[],"Last updated 2025-11-20. Newest rows: gpt-5 (high) 88.0% ($29.08) and DeepSeek-V3.2-Exp Reasoner 74.2% ($1.30). 225 public Exercism tasks, one run (cont = 1). Under v2.1 §2.1, gaps need > 139/√225 = 9.2 pts unless per-task results are used (not checked). v1: C (D3) → v2: B."),
 ("LiveCodeBench","https://livecodebench.github.io/","academic","academic","pick","small_edit",
  S(3,3,3,3,3,0,1,0,3),["D5 leaderboard showed 'Loading leaderboard data…' on fetch (2026-10-24); no rows readable"],[],"Competitive programming (rel = 1). Vals archived it. It stays C under v2, now for D5 rather than D3."),
 ("Interfaze Structured Output Benchmark","https://interfaze.ai/leaderboards/structured-output-benchmark","Interfaze","model vendor","pick","structured_output",
@@ -273,6 +278,70 @@ SRC = [
  S(0,1,2,1,2,3,3,0,3),["D1 entries are vendor model-card self-reports"],[],"New in v2: C."),
 ("Multi-SWE-bench","https://multi-swe-bench.github.io/","ByteDance Seed","benchmark owner","pick","issue_resolution",
  S(1,1,2,3,3,0,3,0,3),["D5 seen in search only (stale entries, e.g. MopenHands + Gemini-2.5-Pro 21.62%); board not opened"],[],"New in v2: C."),
+# ---------------- added in v0.4 discovery pass (2026-10-24) ----------------
+("CodePanel AI Code Review Benchmark","https://codepanel.ai/benchmarks","CodePanel","review vendor (ranks third-party models only)","pick","code_review",
+ S(2,2,3,1,2,3,3,3,2),[],[],
+ "62 fixtures across 13 languages (47 with 56 seeded-in-history defects, 15 clean). Headline counts only fixtures from after 2025-01-01 (42 bug, 15 clean), with ranked models compared on the 37 fixtures they all completed. Fixtures, harness and judge prompt are private, with a canary GUID (cont = 2: private, but no lookup control is described). Judged by a 3-model cross-family panel (Sonnet 5.5, GPT-6.1 Sol, Gemini 3.1 Pro) that excludes the reviewed model's own maker; Cohen's κ 0.94–0.96, no human validation yet (judge = 2). 10,000-sample bootstrap CIs and Holm-corrected paired tests; the stated minimum detectable gap is about 21 pts, so the top 7 share rank 1. $/review from token counts at prices checked 2026-10-16. CodePanel sells a review product but ranks only third-party models (ind = 2, same as the LiveBench precedent). Scores updated 2026-10-17. Single production pipeline, so results are pipeline-specific."),
+("IronBee Raw LLM Code Review Benchmark","https://ironbee.ai/blog/the-honest-raw-llm-code-review-benchmark","IronBee","review vendor (ranks third-party models only)","pick","code_review",
+ S(2,1,3,3,2,3,3,3,2),[],[],
+ "Martian's offline set (50 public PRs, 158 core golden findings). 21 models × up to 3 efforts = 58 configs, 3 passes each, 7,980 reviews. Cross-family 3-judge panel calibrated to within 1 pt of the benchmark's own judge, paired-bootstrap CIs, groups instead of ranks, list-price $/PR. Harness, prompts, every review and verdict are public (github.com/ironbee-ai/code-review-benchmarks, pushed 2026-10-20). One-call raw-model setting, F2 (recall-weighted). Public PRs predate current cutoffs (cont = 1), which keeps it at B. IronBee is about to launch its own review tool, which is not ranked here."),
+("MacroscopeBench","https://macroscope.com/benchmark","Macroscope","review vendor (ranks third-party models only)","pick","code_review",
+ S(2,2,2,1,3,3,3,3,1),[],[],
+ "Proprietary set built from public-repo commits; reported subset 195 commits (144 bug, 51 control), 3 runs averaged, measured $ per run, same prompt and harness for every model. Two LLM judges (recall and precision) with tool access, judge models undisclosed (judge = 1), no CIs. Blog 2026-09-22; board includes GPT-6.1 Sol rows."),
+("Qodo 'Which LLM should review your code?'","https://www.qodo.ai/blog/which-llm-should-review-your-code/","Qodo","review vendor (ranks third-party models only)","pick","code_review",
+ S(2,2,1,1,2,3,3,3,1),[],[],
+ "125 PRs with 703 known bugs, 13 models × 38 configs, F1 and $/PR (2026-10-12). Dataset is Qodo-internal. A single LLM judge (Claude Sonnet 4.6) while Anthropic models lead (disclosed, so judge = 1 rather than 0). Some configs were run once; no CIs. Under v2.1 §2.1, the single-run configs need a gap above 139/√125 = 12.4 pts, so the order among the top models (gaps of a few F1 points) is a tie."),
+("Factory Review Benchmark","https://docs.factory.com/benchmarks/review-benchmark","Factory","harness vendor","pick","code_review",
+ S(2,1,2,3,2,0,3,3,1),[],[],
+ "50 public PRs from 5 repos, 167 validated golden bugs, multiple runs, $/PR, open scoring scripts. Run through Factory's Droid Action, but it ranks models, not Droid. LLM judge with a second-judge spot check (judge = 1). Last updated April 2026; newest models GPT-5.5 / Opus 4.7, so no current pick."),
+("TestSuiteBench (arXiv 2610.13065)","https://arxiv.org/abs/2610.13065","ETH Zurich + LogicStar (academic)","academic","pick","test_writing",
+ S(2,2,2,3,2,2,3,2,3),[],[],
+ "165 Rust/Go/C/C++ CLI apps (12,130 requirement-targeted mutants); agents write a test suite from a spec, scored by mutation score (execution), offline Docker with search disabled, 6 h cap, same mutants and scorer for every row. Paper plus board at testsuitebench.com (8 rows, checked 2026-10-24). Code, harness and data (mutants, reference tests, reference impls) are public as of 2026-10-12, MIT (repro = 3). $/instance is token counts × a 2026-09-22 list-price snapshot, not invoices (cost = 2; Gemini 3.8 Flash at its intro price). Single run per model, no CIs, no per-app results, and the scorer averages only the apps a row finished (missing results are excluded, and the first successful retry is kept); completion counts are not published. Rubric v2.1 §2.1 (noise bound 139/√165 = 10.8 pts): rows that qualify are Claude Opus 5 (high), Gemini 3.8 Flash (medium) and GPT-5.6 Sol (medium). These three are the rows in the paper's whole-set analyses (trajectory counts over the 165 apps, and the overlap of killed mutants across all 12,130), which is evidence that they covered the full set. For Opus 5 the paper says so outright ('33 of 165 instances'). GPT-5.6 Sol carries a flag: it is the model that built the benchmark's specs, tests and mutants. Rows that do not qualify: GPT-6 Astra (no evidence it covered every app), Claude Opus 5.5 and GPT-6.1 Sol (board-only rows, not in the paper, no completion evidence), DeepSeek V4 Flash and GPT-5.6 Luna (validity 78/74 vs 88–97 for the rest, a sign of harness trouble; DeepSeek snapshot not stated in the paper). The top four (55.5–50.1) are a tie. A LogicStar co-author, but LogicStar's agent is not ranked (ind = 2)."),
+("TestEvo-Bench (arXiv 2607.02469)","https://arxiv.org/abs/2607.02469","University of Waterloo + Google","academic","pick","test_writing",
+ S(1,2,3,3,2,0,3,2,3),[],[],
+ "746 test-generation and 509 test-update tasks mined from 152 Java/Maven repos, execution-graded (must pass on new and fail on old revision), coverage and mutation score, timestamped for contamination-aware slicing, CC BY 4.0 data. Only 4 agent configs (Claude Code / SWE-Agent × Opus 4.7, Gemini CLI / SWE-Agent × Gemini 3.1 Pro), single run. Under v2.1 §2.1 (no per-task results found, so the bound is 139/√746 = 5.1 pts on test generation), the harness gaps of 8.9–11.4 pts and the drop under a $1 cap clear the noise, and the tie between the two native-harness configs is a tie. Completion handling was not checked. A Google co-author ranks Gemini (ind = 1), which keeps it at B. Useful finding: success drops sharply under a $1 per-task cap for Opus 4.7, much less for Gemini 3.1 Pro."),
+("Scale SWE Atlas Test Writing","https://labs.scale.com/leaderboard/sweatlas-tw","Scale AI","independent eval org","pick","test_writing",
+ S(1,2,3,3,2,3,3,0,2),[],[],
+ "90 tasks from 11 copyleft repos, 3 trials, ±CIs. Graded by a manifest check, a mutation test (execution), and must-have rubrics judged by Claude Opus 4.5 (judge = 2). Dataset updated 2026-07-28 to block upstream-fix lookup. Harness × model rows (Claude Code, Codex, mini-SWE-agent). ind = 1 (Scale/Meta). No Opus 5.5 / Sonnet 5.5 / GPT-6.1 / Gemini 4 rows."),
+("Scale SWE Atlas Refactoring","https://labs.scale.com/leaderboard/sweatlas-refactoring","Scale AI","independent eval org","pick","refactor_migration",
+ S(1,2,3,3,2,3,3,0,2),[],[],
+ "70 tasks across 10 repos and 6 languages: existing tests must still pass (no P2F/M2F) and must-have rubrics judged by Claude Opus 4.5 must pass. ±CIs. ind = 1 (Scale/Meta). Leader GPT 6 Astra (Codex) xHigh; no Sonnet 5.5 / GPT-6.1 / DeepSeek 1017 rows, so it cannot corroborate the Vals Code Migration picks."),
+("NIST CAISI PortBench (DeepSeek V4 Pro evaluation)","https://www.nist.gov/news-events/news/2026/05/caisi-evaluation-deepseek-v4-pro","NIST CAISI (US government)","government evaluator","pick","refactor_migration",
+ S(3,3,1,0,1,1,3,0,3),[],[],
+ "Non-public CLI-tool porting benchmark, Inspect ReAct agent, 1M weighted-token budget, test-based scoring. Government evaluator with no product (ind = 3). Task count and full method unpublished, no cost (PortBench was excluded from CAISI's cost comparison). Published 2026-05-01; newest models GPT-5.5 / Opus 4.6 / DeepSeek V4 Pro, so it is an independent refactor/migration runner but has no current-model rows."),
+("Mercor Terminal-Bench 2.1 Extended","https://www.mercor.com/apex/mercor-extended/ots-held-out-terminal-bench-2-1-leaderboard/","Mercor","independent eval org (expert-data vendor)","pick","terminal_agentic_loop",
+ S(2,2,2,2,2,3,3,0,3),[],[],
+ "99 private Mercor-written tasks added to TB 2.1's 89 public ones; Terminus 2 harness (1,000 steps, 3 h), k = 3, max effort for every model, programmatic tests. No CIs and no cost. Mercor sells expert data to labs but ships no model (ind = 2). A third runner on terminal work, independent of Vals and AA. Public-set scores (80–87%) collapse to 44–48% on the held-out set. Score 70 is right at the A line."),
+("Mercor DeepSWE v1.1 run","https://www.mercor.com/apex/","Mercor (benchmark by Datacurve)","independent eval org (expert-data vendor)","pick","issue_resolution",
+ S(2,2,2,2,3,3,3,0,3),[],[],
+ "113 original tasks across 91 repos and 5 languages, not sourced from public commits; mini-swe-agent (500 steps, 2 h), k = 3 (k = 1 for some open models), unit-test grading. No cost. The k = 1 rows are single-run (v2.1 §2.1 bound 139/√113 = 13.1 pts); the rows cited here are k = 3. Only two rows were readable on the APEX index (Opus 5.5 Max 72.3% #1; Opus 5 Max 71.4%); the other top names did not render."),
+("Mercor SWE-bench Verified Extended","https://www.mercor.com/apex/mercor-extended/ots-held-out-swe-bench-verified-leaderboard/","Mercor","independent eval org (expert-data vendor)","pick","small_edit; issue_resolution",
+ S(2,2,2,2,2,3,2,0,3),[],[],
+ "50 private Mercor tasks in SWE-bench Verified style; mini-swe-agent, Pass@1, k = 3, test-graded, no CIs, no cost. The ordering is unusual (DeepSeek V4.1 Flash 82.7%, Opus 5 82.0%, Opus 5.5 66.0%, GPT-6.1 Sol 45.3%), and 50 tasks give roughly ±13-pt noise, so it is B corroboration only."),
+("Mercor SWE Atlas Codebase QnA (public + Extended)","https://www.mercor.com/apex/mercor-extended/ots-held-out-swe-atlas-leaderboard/","Mercor (tasks by Scale AI)","independent eval org (expert-data vendor)","pick","codebase_qa_search",
+ S(2,2,2,2,2,3,3,0,1),[],[],
+ "Mercor's own run of Scale's 124 public tasks plus 50 held-out Mercor tasks; mini-swe-agent (250 steps, 1 h). LLM judge over rubrics (Claude Opus 4.5) while Claude models lead (judge = 1), no cost. DeepSeek V4.1 Flash drops from 53.5% (public, #1) to 36.7% (held-out); Sonnet 5.5 44.7% and Opus 5.5 43.3% lead the held-out set."),
+("Mercor AA-LCR Extended","https://www.mercor.com/apex/","Mercor (benchmark by Artificial Analysis)","independent eval org (expert-data vendor)","pick","long_context_summarize",
+ S(2,2,2,2,2,3,2,0,1),[],[],
+ "89 private Mercor questions plus AA-LCR's 100 public ones, ~100K tokens each, k = 4, LLM judge (Gemini 3.5 Flash). Same LLM-judge limit as AA-LCR (judge = 1). No cost."),
+("Mercor APEX-SWE","https://www.mercor.com/apex/","Mercor (with Cognition)","independent eval org (expert-data vendor)","pick","issue_resolution; greenfield_app",
+ S(2,2,2,2,3,3,2,0,2),[],[],
+ "200 private observability and integration tasks, k = 3, ±CIs, rubrics plus repository tests (judge = 2). Built with Cognition, whose own model is not in the top rows. Opus 5.5 Max 67.6 ±5.9, Sonnet 5.5 Max 66.4 ±6.1. No cost; close proxy for issue resolution (rel = 2)."),
+("Mercor τ³-Banking run","https://www.mercor.com/apex/","Mercor (benchmark by Sierra)","independent eval org (expert-data vendor)","pick","tool_orchestration",
+ S(2,1,3,3,2,3,2,0,3),[],[],
+ "Sierra's public 97-task set, k = 3, ±CIs, GPT-5.2 low as user simulator, programmatic DB-state checks plus one LLM-judged assertion. An independent rerun of a public set (cont = 1). Gemini 4 Argon High 58.1 ±8.9 #1, Opus 5.5 Max 55.0 ±8.2."),
+("Mercor APEX-Agents","https://www.mercor.com/apex/","Mercor","independent eval org (expert-data vendor)","pick","tool_orchestration",
+ S(2,2,2,2,3,3,2,0,1),[],[],
+ "240 private long-horizon cross-app tasks in Google Suite (banking, law, consulting), k = 3, ±CIs, LLM judge over expert rubrics (judge = 1). Gemini 4 Argon High 82.4 ±4.3 #1, Sonnet 5.5 Max 75.5 ±4.7, Opus 5.5 Max 73.5 ±4.9. Professional-services tool use is a proxy (rel = 2)."),
+("Mercor FrontierCode run","https://www.mercor.com/apex/","Mercor (benchmark by Cognition)","independent eval org (expert-data vendor)","pick","issue_resolution",
+ S(2,2,1,1,2,3,3,0,2),[],[],
+ "150 maintainer-built tasks graded on mergeability; not on Mercor's methodology page (meth = 1). Opus 5.5 Medium 54.6%, Fable 5 xHigh 53.5%, Opus 5 Medium 53.4%, GPT-6 Astra Max 53.3%, Sonnet 5.5 xHigh 52.1%. A second runner of FrontierCode besides AA."),
+("VisualForge Bench","https://visualforgebench.com/","independent blogger","community","pick","frontend_visual",
+ S(2,2,1,0,0,3,3,3,1),["D6 8 scored pages per model, private prompts, LLM-judged"],[],""),
+("screenshotbench","https://screenshotbench.com/","community","community","pick","frontend_visual",
+ S(2,1,1,1,0,1,3,0,1),["D6 a handful of target pages; older models"],[],""),
+("ArchBench (sabench.com)","https://www.sabench.com/","SA4S workshop (academic)","community / self-submitted","pick","planning_architecture",
+ S(1,1,1,1,0,0,2,0,1),["D5 only the landing page (6 categories, 38 submissions) was readable; no model rows read","D1 results are submissions"],[],""),
 # ---------------- mirrors ----------------
 ("BenchLeader / BenchLM / LLMBoard / benchgap mirrors","https://www.benchleader.com/","various aggregators","mirror","pick","(all)",
  S(1,0,1,0,0,3,2,0,0),["D2 mirrors; benchgap publishes estimated scores; BenchLM mislabels creators"],[],
@@ -311,6 +380,25 @@ NEWEST = {
  "AA AutomationBench-AA":("2026-10-23 (board)","maintained"),
  "Scale SWE-Bench Pro V2 (private split)":("≥2026-07-24 (Opus 5 row)","unknown"),
  "Scale MCP Atlas":("≥2026-07-24 (Opus 5 row)","unknown"),
+ "CodePanel AI Code Review Benchmark":("2026-10-17 (scores updated)","maintained"),
+ "IronBee Raw LLM Code Review Benchmark":("2026-10-19 (post)","one-off"),
+ "MacroscopeBench":("2026-09-22 (blog; board has GPT-6.1 Sol rows)","maintained"),
+ "Qodo 'Which LLM should review your code?'":("2026-10-12 (post)","one-off"),
+ "Factory Review Benchmark":("2026-04 (last updated)","unknown"),
+ "TestSuiteBench (arXiv 2610.13065)":("2026-10 (paper); board checked 2026-10-24; repo 2026-10-12","maintained (board added Opus 5.5 / GPT-6.1 Sol rows)"),
+ "TestEvo-Bench (arXiv 2607.02469)":("2026-07 (paper)","live (periodic task mining)"),
+ "Scale SWE Atlas Test Writing":("≥2026-07-28 (dataset update note)","maintained"),
+ "Scale SWE Atlas Refactoring":("unknown (GPT 6 Astra row)","maintained"),
+ "NIST CAISI PortBench (DeepSeek V4 Pro evaluation)":("2026-05-01 (report)","one-off"),
+ "Mercor Terminal-Bench 2.1 Extended":("unknown (has GPT-6.1 Sol / Opus 5.5 rows)","maintained"),
+ "Mercor DeepSWE v1.1 run":("unknown (has Opus 5.5 row)","maintained"),
+ "Mercor SWE-bench Verified Extended":("unknown (has GPT-6.1 Sol / Opus 5.5 rows)","maintained"),
+ "Mercor SWE Atlas Codebase QnA (public + Extended)":("unknown (has GPT-6.1 Sol / Opus 5.5 rows)","maintained"),
+ "Mercor AA-LCR Extended":("unknown (has Opus 5.5 row)","maintained"),
+ "Mercor APEX-SWE":("unknown (has Opus 5.5 row)","maintained"),
+ "Mercor τ³-Banking run":("unknown (has Gemini 4 Argon row)","maintained"),
+ "Mercor APEX-Agents":("unknown (has Gemini 4 Argon row)","maintained"),
+ "Mercor FrontierCode run":("unknown (has Opus 5.5 row)","maintained"),
 }
 WHYMOVE = {
  "AA IFBench":"D3 was its only disqualifier. AA-run, programmatic checks; the board is maintained. It still cannot back a 'best' claim, because no current frontier row was found.",
@@ -345,18 +433,20 @@ c=Counter(r["tier"] for r in rows)
 c1=Counter(r["prev_tier"] for r in rows if r["prev_tier"]!="new")
 moved=[r for r in rows if r["tier_change"]]
 added=[r for r in rows if r["prev_tier"]=="new"]
-md=["# Sources","",f"Checked {D} (America/Los_Angeles). Scored against `docs/SOURCE_RUBRIC.md` (v2) and generated by `scripts/build_sources.py`; tiers are computed from the scores, not set by hand.","",
-    f"**{len(rows)} sources: {c['A']} tier A, {c['B']} tier B, {c['C']} tier C.** Previous pass (v1 rule, {sum(c1.values())} sources): {c1['A']} A, {c1['B']} B, {c1['C']} C.","",
-    "v2 change: recency no longer counts toward the source score (denominator 34.5, not 39) and no longer gates tier A; D3 is retired. Recency is now applied to each data point (see `docs/SOURCE_RUBRIC.md` §4). `rec` is still recorded as information about current-model coverage.","",
+md=["# Sources","",f"Checked {D} (America/Los_Angeles). Scored against `docs/SOURCE_RUBRIC.md` (v2.1) and generated by `scripts/build_sources.py`; tiers are computed from the scores, not set by hand.","",
+    f"**{len(rows)} sources: {c['A']} tier A, {c['B']} tier B, {c['C']} tier C.** Previous pass (research v0.3, {sum(c1.values())} sources): {c1['A']} A, {c1['B']} B, {c1['C']} C.","",
+    "Rubric v2 (in force since research v0.3): recency no longer counts toward the source score (denominator 34.5, not 39) and no longer gates tier A; D3 is retired. Recency is now applied to each data point (see `docs/SOURCE_RUBRIC.md` §4). `rec` is still recorded as information about current-model coverage. v2.1 makes D6 precise: a single-run result is used row by row, and only for gaps above its noise (§2.1; worst case 139/√n pts).","",
     "Score order: ind / cont / meth / repro / stats / rec* / rel / cost / judge (each 0–3; *rec is not scored).","",
-    "## Tier moves vs. the previous pass","","| Source | Was | Now | Why |","|---|---|---|---|"]
+    "## Tier moves vs. the previous pass",""]
+if moved: md+=["| Source | Was | Now | Why |","|---|---|---|---|"]
+else: md+=["None: no existing source changed tier this pass."]
 for r in moved:
     md.append(f"| {r['source']} | {r['prev_tier']} | {r['tier']} | {WHYMOVE.get(r['source'],'')} |")
-md+=["","Same tier, different reason: SWE-bench-Live and LiveCodeBench stay C, now for D5 (leaderboard unreadable on fetch) instead of D3. Vals SWE-bench Verified and Epoch SWE-bench Verified stay C for D7. Interfaze stays C (D1), and the CodeRouter blog stays C (no quality measurement). Vals Code Migration v1 stays B under a new 'superseded version' cap; without it, dropping the recency gate would have promoted it to A even though v1.1 replaced it.",""]
+md+=["","Same tier, different reason: Martian Code Review Bench stays C, now on score (48) instead of D5; its repo is readable again and IronBee re-ran its PR set.",""]
 md+=["","## Added this pass","","| Source | Tier | Note |","|---|---|---|"]
 for r in added:
     md.append(f"| {r['source']} | {r['tier']} | {r['disqualifiers'] or r['caps'] or 'newest result: '+r['newest_result']} |")
-md+=["","Considered and not added: AA SciCode (scientific coding; it maps to none of the 13 subtasks); SWE-PolyBench (Amazon; seen in search only).",""]
+md+=["","Considered and not added (primary not opened or no subtask fit; see `docs/discovery-log.md`): OpenHands Index (harness vendor; HF dataset seen in search only); ATLAS long-context (arXiv 2605.28079) and LongCodeBench (2025 models); Context Arena (JS shell, unreadable); StructEval; PRDBench; SWE-Mutation (critique of mutation benchmarks; older models); Design2Code (2024 models; mirrors only); sasid.ai structured-output blog (12–24 cases, D6 if added); NIST CAISI GLM-5.3 assessment (cyber only); Mercor non-coding boards (APEX-1, Harvey LAB, GDPval, BrowseComp, etc.); AA MLCR-AA (medical long context; seen on X only); X anecdotes (10-bug in-house eval, KrabArena rerun). Earlier: AA SciCode; SWE-PolyBench.",""]
 for T,title in (("A","Tier A: can support a conclusion alone (subject to the per-claim recency rules)"),("B","Tier B: corroboration only"),("C","Tier C: excluded")):
     md+=[f"## {title}",""]
     for r in sorted([r for r in rows if r["tier"]==T],key=lambda r:-r["weighted_score"]):

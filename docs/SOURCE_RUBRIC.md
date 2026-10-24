@@ -1,8 +1,10 @@
-# Source rubric (v2, 2026-10-24)
+# Source rubric (v2.1, 2026-10-24)
 
 This rubric sets the bar a data source must clear before it can support a routing conclusion. Every source in `data/sources.csv` is scored against it. `scripts/build_sources.py` computes the tier from the scores and flags, so tiers are never hand-assigned.
 
 Design principle: each conclusion rests on 1–3 high-quality data points. The rubric exists so that "high quality" is checkable rather than a judgment call.
+
+**v2.1 change (2026-10-24):** D6 is made precise. "Single run" no longer disqualifies a whole source. A single-run result is used row by row and only for gaps larger than its noise (§2.1).
 
 **v2 change (2026-10-24):** recency moved from the source to the claim.
 - A methodologically strong older source can now be tier A, but only for claims about the models it actually tested.
@@ -37,8 +39,37 @@ All other criteria and disqualifiers are unchanged. v2 adds one cap, "superseded
 | ~~D3~~ | **Retired in v2.** Age is handled per data point (§4). Abandoned or unreadable boards are still excluded, through D5 and D7. |
 | D4 | **Wrong construct**: usage or popularity data offered as quality. |
 | D5 | **Unverifiable**: no method or results could be read on the check date. This includes an abandoned board whose rows cannot be tied to a model version and an evaluation date. A board that is frozen but readable and dated is **not** D5. |
-| D6 | **Anecdote**: fewer than 30 tasks, or a single run per model with no repeat. |
+| D6 | **Anecdote**: fewer than 30 tasks; or a single run per model in which no row passes the single-run test (§2.1). (Before v2.1: "fewer than 30 tasks, or a single run per model with no repeat".) |
 | D7 | **Saturated**: the top cluster sits within noise of the ceiling, so the board cannot separate the models it tests. |
+
+## 2.1 Single-run results (new in v2.1)
+
+A result is **single-run** when each model was run once on the task set: no repeats, no seeds, and no CI from repeated runs. Such a result is used row by row and claim by claim. Everything below has to hold.
+
+1. **Size.** At least 30 tasks. Below that, the source is D6.
+2. **The row qualifies.** A row can be the subject of a claim (the model said to be best, good enough, or better than another) only if all of these hold:
+   - **Setup per row:** the harness, the reasoning effort and the model snapshot are documented for that row. A config file in the source's public repo counts.
+   - **Every task counted:** one of these holds:
+     - failed or timed-out tasks score 0;
+     - the source reports how many tasks the row completed;
+     - all rows are compared on the common subset that every row completed;
+     - the source analyses this row over the full task set, which shows it covered every task.
+
+     A score that silently averages only the tasks a row finished does not count. Dropped tasks are usually the hard ones, so the omission flatters the row.
+   - **No row-level red flag:** for example, validity far below the other rows (a sign of harness trouble), or an ambiguous snapshot.
+3. **Noise test.** A claim that one row beats another needs a gap larger than the 95% noise interval for that gap. Use the first of these that is available:
+   1. **Paired bootstrap over tasks**, when per-task results are public. Jagged computes it: 10,000 resamples of tasks, 2.5–97.5 percentile of the gap.
+   2. **The source's own CI over tasks.**
+   3. **Worst-case bound:** **139/√n points**, for a 0–100 score that is the mean of per-task scores in [0, 1] over n independent tasks. Each per-task score has variance ≤ 0.25, so the gap between two independent rows has SD ≤ √(0.5/n) and 1.96 × √(0.5/n) × 100 ≈ 139/√n. Examples: n = 100 → 13.9; n = 165 → 10.8; n = 500 → 6.2.
+
+   The bound covers both task sampling and run-to-run luck, so it needs no repeat run. It is conservative. A published per-task file almost always gives a tighter interval.
+4. **How the claims read.**
+   - Rows whose gap is inside the interval are a **tie**. Their order is not evidence.
+   - **Best:** the model is in the leader's tie cluster. This replaces the 3-pt rule in §6 for single-run sources.
+   - **Good enough:** the usual 10-pt bar applies to a qualifying row.
+   - **Step-down and "clearly worse":** the gap must pass the noise test.
+   - A row that does not qualify can still be the **lower** side of a "clearly better" claim. Its likely bias is upward, so the claim is conservative. It cannot be the subject of a claim.
+5. **Scoring is unchanged.** A single-run source still gets at most `stats` = 2. This section only decides which of its rows and gaps a conclusion may cite. Note in the source's entry which rows qualify.
 
 ## 3. Caps (at most tier B)
 
@@ -109,7 +140,7 @@ Each conclusion cites at most 3 data points. Each point is tagged with its effec
 | **Insufficient evidence** | No tier-A data point. Tier-B points may be listed as "B-only consensus", but they do not make a pick. |
 
 Definitions:
-- **Agree:** for a "best" pick, the model is in the source's top tier (within the source's CI, or within 3 points of the leader if no CI is given). For a "good enough" pick, the model is within 10 points of the leader and cheaper per task.
+- **Agree:** for a "best" pick, the model is in the source's top tier (within the source's CI, or within 3 points of the leader if no CI is given; for a single-run source, in the leader's tie cluster under §2.1). For a "good enough" pick, the model is within 10 points of the leader and cheaper per task.
 - **Different runners:** two Artificial Analysis boards count as one runner. So do two Vals boards.
 - **⏳ older evidence:** the pick cites at least one aging or stale point, or relies on an R3 (family) B point. Re-check these first.
 

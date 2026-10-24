@@ -29,23 +29,23 @@ Jagged builds the routing table from independent public benchmarks instead. Each
    - **Insufficient:** no tier-A evidence, so no pick.
 4. **Date every data point.** Recency is judged per claim: fresh ≤90 days, aging 91–180, stale >180. Older evidence keeps its tier only for the exact model it tested, and only if that model is still sold at a verified price. It carries forward to successors or families only as corroboration. Picks that lean on older evidence are marked ⏳.
 
-## Current status (v0, 2026-10-24)
+## Current status (research v0.4, 2026-10-24)
 
 | Subtask | Best | Good enough / cheaper | Step-down / budget | Status |
 |---|---|---|---|---|
-| `terminal_agentic_loop` | Claude Opus 5.5 / Sonnet 5.5 | Kimi K3.1 Pro (contested) | GPT-6.1 Sol | Best **supported**; step-down supported |
+| `terminal_agentic_loop` | Claude Opus 5.5 / Sonnet 5.5 | Kimi K3.1 Pro (contested); Gemini 3.8 Flash (contested ⏳) | GPT-6.1 Sol (contested ⏳) | Best **supported** (3 runners); step-down contested |
 | `tool_orchestration` | Gemini 4 Argon (high) ⏳ | MiniMax M3.1 Flash | — | Best **supported**; good enough provisional |
 | `greenfield_app` | Claude Sonnet 5.5 | Claude Haiku 5.5 (contested) | DeepSeek V4.1 Flash 1017 (contested) | Best **supported** |
 | `refactor_migration` | Claude Sonnet 5.5 | GPT-6.1 Sol | DeepSeek V4.1 Flash 1017 (floor) | **Provisional** (one runner) |
-| `issue_resolution` | Claude Opus 5.5 (medium) ⏳ | GPT-6.1 Sol (max) ⏳ | DeepSeek V4.1 Flash in Codex (contested); older: GPT-5.6 Sol, GLM-5.2, Grok 4.5 (provisional ⏳) | Best and good enough **supported** |
+| `issue_resolution` | Claude Opus 5.5 (medium) ⏳ (3 A runners) | GPT-6.1 Sol (max) ⏳ | DeepSeek V4.1 Flash in Codex (contested); older: GPT-5.6 Sol, GLM-5.2, Grok 4.5 (provisional ⏳) | Best and good enough **supported** |
 | `structured_output` | — (current leaders untested) | Grok 4.3 (medium), best among tested ⏳ | — | **Provisional** |
 | `codebase_qa_search` | — | — | — | Insufficient |
 | `small_edit` | — | — | — | Insufficient |
 | `frontend_visual` | — | — | — | Insufficient |
-| `code_review` | — | — | — | Insufficient |
+| `code_review` | Claude Opus 5.5 | GPT-6.1 Sol (contested) | GPT-6 Luna / Claude Haiku 5.5 | Best **supported**; good enough contested; step-down provisional |
 | `planning_architecture` | — | — | — | Insufficient |
 | `long_context_summarize` | — | — | — | Insufficient |
-| `test_writing` | — | — | — | Insufficient |
+| `test_writing` | — (no qualifying frontier row); top tested: Claude Opus 5 | — (leads only: GPT-6.1 Sol, Opus 5.5) | GPT-5.6 Sol | Best-among-tested **supported**; good enough **insufficient** (rubric v2.1 single-run rule; see research.md §4.2) |
 
 ⏳ = relies on aging, stale, undated or same-family (predecessor) evidence. Full data points, with evidence dates, are in [`docs/research.md`](docs/research.md).
 
@@ -72,11 +72,12 @@ A generated `ROUTING.md` (prose for prompt context) and a `models.yaml` are plan
 ## Repository layout
 
 ```
-docs/SOURCE_RUBRIC.md      reliability bar (v2: per-claim recency)
+docs/SOURCE_RUBRIC.md      reliability bar (v2.1: per-claim recency, single-run rule)
 docs/research.md           current conclusions with every data point
 docs/sources.md            per-source scores, justifications, tier moves (generated)
-docs/history/              earlier research passes (v0, v1)
-data/sources.csv           65 scored sources (generated)
+docs/history/              earlier research passes (v0, v1, v2)
+docs/discovery-log.md      how sources were found, and yield per search method
+data/sources.csv           87 scored sources (generated)
 data/models.csv            prices and headline scores for 22 models (generated)
 schema/                    draft machine-readable format
 scripts/build_sources.py   scores sources -> data/sources.csv, docs/sources.md
@@ -92,16 +93,14 @@ python3 scripts/build_csv.py
 
 ## Contributing
 
-The biggest need is **tier-A evidence for the seven insufficient subtasks**:
+The biggest need is **tier-A evidence for the five insufficient subtasks**:
 - codebase Q&A with execution or human grading
 - small-edit discrimination
 - frontend/visual
-- model-level code review
 - planning
-- long-context summarization
-- test writing
+- long-context summarization (without an LLM judge)
 
-Next is a **second independent runner** for refactor/migration, plus current-frontier runs on SWE-rebench and IFBench. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to propose a source, how it is scored, and the neutrality policy.
+Next is a **second independent tier-A runner** for refactor/migration, structured output, code review and test writing, plus current-frontier runs on SWE-rebench, IFBench and the test-writing boards. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to propose a source, how it is scored, and the neutrality policy.
 
 ## License
 
